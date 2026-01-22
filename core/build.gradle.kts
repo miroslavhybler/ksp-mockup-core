@@ -5,6 +5,9 @@ plugins {
     `maven-publish`
 }
 
+group = "com.github.miroslavhybler.mockup-core"
+version = "2.0.0-alpha01"
+
 android {
     namespace = "com.mockup.core"
     compileSdk {
@@ -34,7 +37,15 @@ android {
     kotlin {
         jvmToolchain(jdkVersion = 11)
     }
+    publishing {
+        multipleVariants {
+            withSourcesJar()
+            withJavadocJar()
+        }
+    }
 }
+
+
 
 dependencies {
     /** Mockup plugin */
