@@ -2,8 +2,7 @@ plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.serialization.json)
-    alias(libs.plugins.dokka)
-    `maven-publish`
+
 }
 
 android {
@@ -54,24 +53,4 @@ dependencies {
     androidTestImplementation(libs.espresso.core)
     debugImplementation(libs.compose.ui.tooling)
     debugImplementation(libs.androidx.ui.tooling)
-}
-
-afterEvaluate {
-    publishing {
-        publications {
-            create<MavenPublication>("release") {
-                from(components.getByName("release"))
-                groupId = "com.github.miroslavhybler"
-                artifactId = "mockup-core"
-                version = "2.0.0-alpha01"
-                pom {
-                    description.set("Jitpack.io deploy")
-                }
-            }
-
-        }
-        repositories {
-            mavenLocal()
-        }
-    }
 }
