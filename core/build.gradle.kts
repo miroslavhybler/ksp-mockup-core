@@ -42,6 +42,9 @@ android {
             withSourcesJar()
             withJavadocJar()
         }
+        singleVariant("release") {
+
+        }
     }
 }
 
