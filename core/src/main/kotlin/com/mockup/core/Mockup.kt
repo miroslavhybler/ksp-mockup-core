@@ -124,8 +124,8 @@ public object Mockup {
      * @since 2.0.0
      */
     public fun <T : Any> getProvider(clazz: Class<T>): MockupDataProvider<T> {
-        val className = "${clazz.name}MockupProvider"
         try {
+            val className = "${clazz.name}MockupProvider".replace(oldValue = "$", newValue = "")
             val providerClass = Class.forName(className).kotlin
             val providerInstance = providerClass.primaryConstructor?.call()
                 ?: throw IllegalArgumentException(
