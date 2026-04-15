@@ -53,15 +53,12 @@ dependencies {
     /** Mockup plugin */
     //Always keep same version for processor and annotations
     compileOnly("com.github.miroslavhybler:ksp-mockup-annotations:2.0.0-alpha04")
-    implementation(platform(libs.compose.bom))
-    compileOnly(libs.compose.ui.tooling.preview)
     implementation(libs.core.ktx)
     implementation(libs.serialization.json)
     implementation(libs.kotlin.reflect)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.espresso.core)
-    debugImplementation(libs.compose.ui.tooling)
 }
 
 

@@ -3,7 +3,6 @@
 package com.mockup.core
 
 
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import kotlin.reflect.KClass
 
 /**
@@ -11,6 +10,10 @@ import kotlin.reflect.KClass
  * For more information visit [Github repository](https://github.com/miroslavhybler/ksp-mockup)
  * Report issue [here](https://github.com/miroslavhybler/ksp-mockup/issues)
  * @param values Generated mockup data, must be not empty
+ *
+ * Compose Preview support is optional. Generated provider classes can implement
+ * `PreviewParameterProvider` when KSP input option `mockup.usePreviewParameterProviders`
+ * is enabled, while this core type stays free of UI dependencies.
  * @author Miroslav Hýbler <br>
  * created on 19.12.2025
  * @since 2.0.O
@@ -18,10 +21,10 @@ import kotlin.reflect.KClass
 public abstract class MockupDataProvider<T : Any> constructor(
     values: Sequence<T>,
     val clazz: KClass<T>,
-) : PreviewParameterProvider<T> {
+) {
 
-    override val values: Sequence<T> = run {
-        val customValues = Mockup.getCustomValues(clazz)
+    public open val values: Sequence<T> = run {
+        val customValues = Mockup.getCustomValues(clazz = clazz)
         if (customValues.isNullOrEmpty()) {
             values
         } else {
@@ -62,7 +65,7 @@ public abstract class MockupDataProvider<T : Any> constructor(
      * Returns the number of elements in the [values] [Sequence].
      * @since 2.0.O
      */
-    override val count: Int
+    public open val count: Int
         get() = values.count()
 
 }
