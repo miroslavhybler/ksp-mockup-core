@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "com.github.miroslavhybler.mockup-core"
-version = "2.0.0-beta01-DEV"
+version = "2.0.0-beta01"
 
 android {
     namespace = "com.mockup.core"
@@ -52,7 +52,7 @@ kotlin {
 dependencies {
     /** Mockup plugin */
     //Always keep same version for processor and annotations
-    compileOnly("com.github.miroslavhybler:ksp-mockup-annotations:2.0.0-alpha04")
+    compileOnly("com.github.miroslavhybler:ksp-mockup-annotations:2.0.0-beta01")
     implementation(libs.core.ktx)
     implementation(libs.serialization.json)
     implementation(libs.kotlin.reflect)
@@ -69,7 +69,7 @@ afterEvaluate {
                 from(components.getByName("release"))
                 groupId = "com.github.miroslavhybler"
                 artifactId = "mockup-core"
-                version = "2.0.0-beta01-DEV"
+                version = "2.0.0-beta01"
                 pom {
                     description.set("Jitpack.io deploy")
                 }
