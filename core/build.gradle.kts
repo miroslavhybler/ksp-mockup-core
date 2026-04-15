@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "com.github.miroslavhybler.mockup-core"
-version = "2.0.0-alpha04"
+version = "2.0.0-beta01-DEV"
 
 android {
     namespace = "com.mockup.core"
@@ -72,7 +72,7 @@ afterEvaluate {
                 from(components.getByName("release"))
                 groupId = "com.github.miroslavhybler"
                 artifactId = "mockup-core"
-                version = "2.0.0-alpha04"
+                version = "2.0.0-beta01-DEV"
                 pom {
                     description.set("Jitpack.io deploy")
                 }

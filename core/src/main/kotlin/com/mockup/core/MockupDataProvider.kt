@@ -16,9 +16,18 @@ import kotlin.reflect.KClass
  * @since 2.0.O
  */
 public abstract class MockupDataProvider<T : Any> constructor(
-    override val values: Sequence<T>,
+    values: Sequence<T>,
     val clazz: KClass<T>,
 ) : PreviewParameterProvider<T> {
+
+    override val values: Sequence<T> = run {
+        val customValues = Mockup.getCustomValues(clazz)
+        if (customValues.isNullOrEmpty()) {
+            values
+        } else {
+            customValues.asSequence() + values
+        }
+    }
 
     /**
      * Returns the first element from the [values] [Sequence].

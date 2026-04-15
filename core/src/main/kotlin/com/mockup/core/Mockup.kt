@@ -2,9 +2,11 @@
 
 package com.mockup.core
 
+import androidx.annotation.RestrictTo
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlin.jvm.Throws
+import kotlin.reflect.KClass
 import kotlin.reflect.full.primaryConstructor
 
 
@@ -16,6 +18,120 @@ import kotlin.reflect.full.primaryConstructor
  * @since 2.0.0
  */
 public object Mockup {
+    /**
+     * Must be public to be used in inline functions
+     */
+    @RestrictTo(RestrictTo.Scope.LIBRARY)
+    public val customDataRegistry: MutableMap<KClass<*>, List<Any>> = LinkedHashMap()
+
+    internal fun <T : Any> getCustomValues(clazz: KClass<T>): List<T>? {
+        synchronized(customDataRegistry) {
+            @Suppress("UNCHECKED_CAST")
+            return customDataRegistry[clazz] as? List<T>
+        }
+    }
+
+    /**
+     * Registers a single custom mockup item from [json] for the given [clazz].
+     * The registered data are prepended before generated values.
+     */
+    public inline fun <reified T : Any> add(clazz: KClass<T>, json: String) {
+        val value = fromJson<T>(json = json)
+        synchronized(customDataRegistry) {
+            customDataRegistry[clazz] = listOf(value)
+        }
+    }
+
+    /**
+     * Registers a single custom mockup item for the given [clazz].
+     */
+    public fun <T : Any> add(clazz: KClass<T>, value: T) {
+        synchronized(customDataRegistry) {
+            customDataRegistry[clazz] = listOf(value)
+        }
+    }
+
+    /**
+     * Registers multiple custom mockup items from [json] for the given [clazz].
+     * The registered data are prepended before generated values.
+     */
+    public inline fun <reified T : Any> addList(clazz: KClass<T>, json: String) {
+        val values = fromJsonList<T>(json = json)
+        synchronized(customDataRegistry) {
+            customDataRegistry[clazz] = values
+        }
+    }
+
+    /**
+     * Registers multiple custom mockup items for the given [clazz].
+     */
+    public fun <T : Any> addList(clazz: KClass<T>, values: List<T>) {
+        synchronized(customDataRegistry) {
+            customDataRegistry[clazz] = values
+        }
+    }
+
+    /**
+     * Registers custom mockup values from a [CustomMockupProvider].
+     * This is used by generated registry code.
+     */
+   // @RestrictTo(RestrictTo.Scope.LIBRARY)
+    public fun register(provider: CustomMockupProvider<*>) {
+        @Suppress("UNCHECKED_CAST")
+        val clazz = provider.clazz as KClass<Any>
+        @Suppress("UNCHECKED_CAST")
+        val values = provider.values as List<Any>
+        synchronized(customDataRegistry) {
+            customDataRegistry[clazz] = values
+        }
+    }
+
+
+    /**
+     * Registers a single custom mockup item from [json] for the given type [T].
+     * The registered data are prepended before generated values.
+     */
+    public inline fun <reified T : Any> add(json: String) {
+        add(clazz = T::class, json = json)
+    }
+
+    /**
+     * Registers a single custom mockup item for the given type [T].
+     */
+    public inline fun <reified T : Any> add(value: T) {
+        add(clazz = T::class, value = value)
+    }
+
+    /**
+     * Registers multiple custom mockup items from [json] for the given type [T].
+     * The registered data are prepended before generated values.
+     */
+    public inline fun <reified T : Any> addList(json: String) {
+        addList(clazz = T::class, json = json)
+    }
+
+    /**
+     * Registers multiple custom mockup items for the given type [T].
+     */
+    public inline fun <reified T : Any> addList(values: List<T>) {
+        addList(clazz = T::class, values = values)
+    }
+
+    /**
+     * Clears custom data for the given [clazz].
+     */
+    @Synchronized
+    public fun clear(clazz: KClass<*>) {
+        customDataRegistry.remove(clazz)
+    }
+
+    /**
+     * Clears all registered custom data.
+     */
+    @Synchronized
+    public fun clearAll() {
+        customDataRegistry.clear()
+    }
 
     /**
      * Returns the first element from the generated sequence of the mockup data for the given type [T].
@@ -106,6 +222,43 @@ public object Mockup {
     ): T? {
         return try {
             fromJson<T>(json = json)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+
+    /**
+     * @param json Json string to be parsed as list.
+     * @return Parsed list of objects of type [T].
+     * @throws SerializationException in case of any decoding-specific error
+     * @throws IllegalArgumentException if the decoded input is not a valid instance of [T]
+     * @since 2.0.0
+     */
+    @Throws(
+        exceptionClasses = [
+            SerializationException::class,
+            IllegalArgumentException::class
+        ]
+    )
+    public inline fun <reified T : Any> fromJsonList(
+        json: String
+    ): List<T> {
+        return Json.decodeFromString<List<T>>(string = json)
+    }
+
+
+    /**
+     * @param json Json string to be parsed as list.
+     * @return Parsed list of objects of type [T] or null when [json] cannot be parsed into the type.
+     * @since 2.0.0
+     */
+    public inline fun <reified T : Any> fromJsonListOrNull(
+        json: String
+    ): List<T>? {
+        return try {
+            fromJsonList<T>(json = json)
         } catch (e: Exception) {
             e.printStackTrace()
             null
