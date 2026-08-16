@@ -18,6 +18,8 @@ import kotlin.reflect.full.primaryConstructor
  * @since 2.0.0
  */
 public object Mockup {
+    private const val GENERATED_REGISTRY_CLASS_NAME: String = "com.mockup.GeneratedMockupRegistry"
+
     /**
      * Must be public to be used in inline functions
      */
@@ -289,10 +291,99 @@ public object Mockup {
             return providerInstance as MockupDataProvider<T>
         } catch (e: ClassNotFoundException) {
             throw IllegalArgumentException(
-                "MockupDataProvider for ${clazz.canonicalName} not found. " +
-                        "Make sure the class is annotated with @Mockup and the project is built.",
+                createProviderNotFoundMessage(clazz = clazz),
                 e
             )
+        }
+    }
+
+    /**
+     * Creates the error shown when reflective provider lookup fails.
+     *
+     * Generic classes and Kotlin typealiases need an extra explanation because `T::class.java`
+     * only exposes the raw JVM class, so the generated concrete alias/provider cannot be selected
+     * from the existing `Mockup.get<T>()` API.
+     */
+    private fun createProviderNotFoundMessage(clazz: Class<*>): String {
+        val displayName = clazz.canonicalName ?: clazz.name
+        val baseMessage = "MockupDataProvider for $displayName not found. " +
+                "Make sure the class is annotated with @Mockup and the project is built."
+        val providerHints = findProviderHints(clazz = clazz)
+        val shouldExplainErasure = clazz.typeParameters.isNotEmpty() || providerHints.isNotEmpty()
+
+        if (!shouldExplainErasure) {
+            return baseMessage
+        }
+
+        return buildString {
+            append(baseMessage)
+            append("\n\n")
+            append("The requested runtime class $displayName has generic parameters or is used through a Kotlin typealias. ")
+            append("Generic arguments and typealiases are erased at runtime, so Mockup.get<T>() can only see the raw class and cannot choose a concrete generated provider. ")
+            append("This is a JVM type-erasure limitation, not a bug in your @Mockup model.")
+
+            if (providerHints.isEmpty()) {
+                append("\nUse the generated Mockup provider extension for the concrete typealias/generic type instead of Mockup.get<T>().")
+                return@buildString
+            }
+
+            append("\nUse one of the generated provider extensions instead:")
+            providerHints.forEach { hint ->
+                append("\n- import ")
+                append(hint.accessorImport)
+                append("; Mockup.")
+                append(hint.accessorName)
+                append(".first")
+                append(" for ")
+                append(hint.targetTypeName)
+            }
+        }
+    }
+
+    /**
+     * Reads provider hints emitted by the KSP processor, if the generated registry is present.
+     */
+    private fun findProviderHints(clazz: Class<*>): List<MockupProviderHint> {
+        val rawClassName = clazz.name.replace(oldChar = '$', newChar = '.')
+        return try {
+            val registryClass = Class.forName(GENERATED_REGISTRY_CLASS_NAME)
+            val hints = registryClass.getMethod("providerHints").invoke(null) as? List<*>
+            hints
+                ?.mapNotNull { hint -> hint?.toMockupProviderHintOrNull() }
+                ?.filter { hint -> hint.rawClassName == rawClassName }
+                .orEmpty()
+        } catch (exception: Exception) {
+            emptyList()
+        } catch (error: LinkageError) {
+            emptyList()
+        }
+    }
+
+    /**
+     * Converts a generated registry hint object into a core value without requiring the generated
+     * source to compile against this exact core version.
+     */
+    private fun Any.toMockupProviderHintOrNull(): MockupProviderHint? {
+        return MockupProviderHint(
+            rawClassName = readStringProperty(name = "rawClassName") ?: return null,
+            targetTypeName = readStringProperty(name = "targetTypeName") ?: return null,
+            providerClassName = readStringProperty(name = "providerClassName") ?: return null,
+            accessorName = readStringProperty(name = "accessorName") ?: return null,
+            accessorImport = readStringProperty(name = "accessorImport") ?: return null,
+        )
+    }
+
+    /**
+     * Reads a Kotlin string property through its JVM getter.
+     */
+    private fun Any.readStringProperty(name: String): String? {
+        val getterName = "get" + name.replaceFirstChar { char ->
+            if (char.isLowerCase()) char.titlecase() else char.toString()
+        }
+        return try {
+            javaClass.getMethod(getterName).invoke(this) as? String
+        } catch (exception: Exception) {
+            null
         }
     }
 
